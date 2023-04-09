@@ -1,6 +1,4 @@
 import os
-import io
-import json
 
 import torch
 import torchvision
@@ -10,9 +8,10 @@ import torch.nn.functional as F
 
 import numpy as np
 from PIL import Image
-
-from flask import Flask, jsonify, request
 import urllib.request
+
+import json
+from flask import Flask, jsonify, request
 
 # NNの定義
 class Net(nn.Module):
@@ -34,17 +33,13 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-# モデルの読み込み
-# net = Net() # インスタンス化
+# netの読み込み
 PATH = "cifar_net.pth"
+net = Net()
+net.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'))) # GPUからCPUへ変更
+net.eval()
 
-net = torch.load(PATH, torch.device('cpu'))
-
-# net.load_state_dict(torch.load(PATH))
-# net = net.cpu() # 元々GPUで作成したものなのでCPUに変換する
-# net.eval()
-
-# クラス名の定義
+# 分類するクラス名の定義
 classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 # 画像の前処理
@@ -57,73 +52,45 @@ preprocess = transforms.Compose([
 
 app = Flask(__name__)
 
-@app.route("/")
-def index():
-    json_data = {
-        "predictions": [
-            {
-                "classification_results": [
-                    "cat"
-                ],
-                "score": [
-                    0.8342
-                ]
-            }
-        ]
-    }
-    return jsonify(json_data), 200
-
 @app.route('/predict', methods=['POST'])
 def predict():
-    '''
-    # 画像を受け取ります。
-    if 'image_url' in request.json:
-        # 画像がURLで与えられた場合は、画像をダウンロードします。
-        url = request.json['image_url']
-        image = urllib.request.urlopen(url).read()
-        image = tf.io.decode_image(image, channels=3)
-    elif 'image_file' in request.files:
-        # 画像がファイルで与えられた場合は、画像を読み込みます。
-        image_file = request.files['image_file']
-        image = tf.io.decode_image(image_file.read(), channels=3)
-    else:
-        # 画像が与えられていない場合は、エラーを返します。
-        return jsonify({'error': 'No image provided.'}), 400
-    '''
 
-    '''
-    image_file = request.files['image_file']
-    image = Image.open(io.BytesIO(image_file)).convert('RGB')
+    # 画像を受け取る
+    if request.is_json and 'image_uri' in request.json:
+        # 画像がURIで与えられた場合は、画像をダウンロード
+        image_uri = request.json['image_uri']
+        image = Image.open(urllib.request.urlopen(image_uri))
+    elif 'image_file' in request.files:
+        # 画像データが与えられた場合
+        image_file = request.files['image_file']
+        image = Image.open(image_file).convert('RGB')
+    else:
+        # 画像が与えられていない場合は、エラーを返す
+        return jsonify({'error': 'No image provided.'}), 400
 
     # 画像の前処理
     inputs = preprocess(image).unsqueeze(0)
 
     # 予測
-    outputs = model(inputs)
+    outputs = net(inputs)
     _, predicted = torch.max(outputs, 1)
 
-    # 結果をJSON形式で返す
-    return jsonify({
-        'predictions': [{
-            'classification_results': [classes[predicted[0]]],
-            'score': [float(F.softmax(outputs, dim=1)[0][predicted[0]])]
-        }]
-    }), 200
-    '''
+    classification_results = classes[predicted]
+    predict_score = float(F.softmax(outputs, dim=1)[0][predicted][0])
 
+    # 結果をJSON形式で返す
     json_data = {
         "predictions": [
             {
                 "classification_results": [
-                    "cat"
+                    classification_results
                 ],
                 "score": [
-                    0.8342
+                    predict_score
                 ]
             }
         ]
     }
-    print(request.get_json())
     return jsonify(json_data), 200
 
 
