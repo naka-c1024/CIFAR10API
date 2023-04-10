@@ -1,19 +1,15 @@
 import os
-
 import torch
 import torchvision
 from torchvision import transforms
 import torch.nn as nn
 import torch.nn.functional as F
-
-import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
+import urllib.error
 import urllib.request
-
 import json
 from flask import Flask, jsonify, request
 
-# NNの定義
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -33,66 +29,63 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-# netの読み込み
-PATH = "cifar_net.pth"
-net = Net()
-net.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'))) # GPUからCPUへ変更
-net.eval()
+class Classifier:
+    def __init__(self, model_path):
+        self.net = Net()
+        self.net.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        self.net.eval()
 
-# 分類するクラス名の定義
-classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+        self.classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
-# 画像の前処理
-preprocess = transforms.Compose([
-    transforms.Resize(32),
-    transforms.CenterCrop(32),
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
+        self.preprocess = transforms.Compose([
+            transforms.Resize(32),
+            transforms.CenterCrop(32),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
+    def predict(self, image):
+        inputs = self.preprocess(image).unsqueeze(0)
+        outputs = self.net(inputs)
+        _, predicted = torch.max(outputs, 1)
+
+        classification_results = self.classes[predicted]
+        predict_score = float(F.softmax(outputs, dim=1)[0][predicted][0])
+
+        return classification_results, predict_score
+
+def get_image_from_request(request):
+    try:
+        if request.is_json and 'image_uri' in request.json:
+            image_uri = request.json['image_uri']
+            return Image.open(urllib.request.urlopen(image_uri))
+        elif 'image_file' in request.files:
+            image_file = request.files['image_file']
+            return Image.open(image_file).convert('RGB')
+    except (UnidentifiedImageError, ValueError, urllib.error.HTTPError, urllib.error.URLError):
+        return None
+    return None
 
 app = Flask(__name__)
+classifier = Classifier("cifar_net.pth")
 
 @app.route('/predict', methods=['POST'])
-def predict():
+def predict_route():
+    image = get_image_from_request(request)
+    if image is None:
+        return jsonify({'error': 'Invalid or no image provided.'}), 400
 
-    # 画像を受け取る
-    if request.is_json and 'image_uri' in request.json:
-        # 画像がURIで与えられた場合は、画像をダウンロード
-        image_uri = request.json['image_uri']
-        image = Image.open(urllib.request.urlopen(image_uri))
-    elif 'image_file' in request.files:
-        # 画像データが与えられた場合
-        image_file = request.files['image_file']
-        image = Image.open(image_file).convert('RGB')
-    else:
-        # 画像が与えられていない場合は、エラーを返す
-        return jsonify({'error': 'No image provided.'}), 400
+    classification_results, predict_score = classifier.predict(image)
 
-    # 画像の前処理
-    inputs = preprocess(image).unsqueeze(0)
-
-    # 予測
-    outputs = net(inputs)
-    _, predicted = torch.max(outputs, 1)
-
-    classification_results = classes[predicted]
-    predict_score = float(F.softmax(outputs, dim=1)[0][predicted][0])
-
-    # 結果をJSON形式で返す
     json_data = {
         "predictions": [
             {
-                "classification_results": [
-                    classification_results
-                ],
-                "score": [
-                    predict_score
-                ]
+                "classification_results": [classification_results],
+                "score": [predict_score]
             }
         ]
     }
     return jsonify(json_data), 200
-
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
