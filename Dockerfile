@@ -14,8 +14,15 @@ COPY . ./
 # Install production dependencies.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# aliasの設定
-RUN echo 'alias pm="python main.py"' >> ~/.bashrc
+# tailwindcssとaliasの設定
+RUN echo 'alias pm="python main.py"' >> ~/.bashrc \
+    && echo 'alias tw="npx tailwindcss -i ./static/input.css -o ./static/output.css --watch"' >> ~/.bashrc \
+    && apt-get update \
+    && apt-get install -y nodejs npm
+
+# curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - \
+#     && apt-get install -y nodejs \
+#     && apt-get install -y npm \
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.

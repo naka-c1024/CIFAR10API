@@ -8,7 +8,7 @@ from PIL import Image, UnidentifiedImageError
 import urllib.error
 import urllib.request
 import json
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 class Net(nn.Module):
     def __init__(self):
@@ -69,6 +69,11 @@ def get_image_from_request(request):
 app = Flask(__name__)
 classifier = Classifier("cifar_net.pth")
 
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
 @app.route('/predict', methods=['POST'])
 def predict_route():
     image = get_image_from_request(request)
@@ -86,6 +91,7 @@ def predict_route():
         ]
     }
     return jsonify(json_data), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

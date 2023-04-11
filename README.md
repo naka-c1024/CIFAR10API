@@ -27,3 +27,7 @@ curl -X POST -H 'Content-Type: application/json' -d '{"image_uri": "https://cdn.
 
 画像ファイルデータの場合
 curl -X POST -F image_file=@/Users/nakashimayuto/CA_Tech_Lounge_CyberAgent/CIFAR10API/sandbox/cifar10_images/test_2.png http://127.0.0.1:8080/predict
+
+```
+npx tailwindcss -i ./static/input.css -o ./static/output.css --watch
+```
