@@ -91,7 +91,6 @@ def index():
     if request.method == "POST":
         image_uri = request.form.get("image_uri")
         image_file = request.files.get("image_file")
-        # フォームが正しくなかった場合
         if not image_uri and not image_file:
             return render_template("index.html", error="画像のURLまたはファイルを指定してください。")
 

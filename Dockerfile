@@ -1,6 +1,4 @@
-# Use the official lightweight Python image.
-# https://hub.docker.com/_/python
-# FROM python:3.9-slim
+# Use the official Python image.
 FROM python:3.9
 
 # Allow statements and log messages to immediately appear in the Knative logs
@@ -14,7 +12,7 @@ COPY . ./
 # Install production dependencies.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# tailwindcssとaliasの設定
+# aliasとtailwindcssのためのnpm設定
 RUN echo 'alias pm="python main.py"' >> ~/.bashrc \
     && echo 'alias tw="npx tailwindcss -i ./static/input.css -o ./static/output.css --watch"' >> ~/.bashrc \
     && apt-get update \
