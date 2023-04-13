@@ -13,21 +13,36 @@ from flask import Flask, jsonify, request, render_template
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.network = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2), # output: 64 x 16 x 16
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2), # output: 128 x 8 x 8
+
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2), # output: 256 x 4 x 4
+
+            nn.Flatten(),
+            nn.Linear(256*4*4, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10))
+
+    def forward(self, xb):
+        return self.network(xb)
+
+net = Net()
 
 class Classifier:
     def __init__(self, model_path):
@@ -36,6 +51,7 @@ class Classifier:
         self.net.eval()
 
         self.classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+        self.ja_classes = ['飛行機', '自動車', '鳥', '猫', '鹿', '犬', 'カエル', '馬', '船', 'トラック']
 
         self.preprocess = transforms.Compose([
             transforms.Resize(32),
@@ -69,8 +85,29 @@ def get_image_from_request(request):
 app = Flask(__name__)
 classifier = Classifier("cifar_net.pth")
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
+    # POST メソッドでアクセスされた場合
+    if request.method == "POST":
+        image_uri = request.form.get("image_uri")
+        image_file = request.files.get("image_file")
+        # フォームが正しくなかった場合
+        if not image_uri and not image_file:
+            return render_template("index.html", error="画像のURLまたはファイルを指定してください。")
+
+        try:
+            if image_uri:
+                image = Image.open(urllib.request.urlopen(image_uri))
+            elif image_file:
+                image = Image.open(image_file).convert('RGB')
+        except (UnidentifiedImageError, ValueError, urllib.error.HTTPError, urllib.error.URLError):
+            return render_template("index.html", error="無効な画像dataです。")
+
+        classification_results, predict_score = classifier.predict(image)
+        classification_results = classifier.ja_classes[classifier.classes.index(classification_results)]
+        predict_score = round(predict_score * 100, 2)
+        return render_template("index.html", classification_results=classification_results, predict_score=str(predict_score))
+
     return render_template("index.html")
 
 

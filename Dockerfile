@@ -20,10 +20,6 @@ RUN echo 'alias pm="python main.py"' >> ~/.bashrc \
     && apt-get update \
     && apt-get install -y nodejs npm
 
-# curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - \
-#     && apt-get install -y nodejs \
-#     && apt-get install -y npm \
-
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
