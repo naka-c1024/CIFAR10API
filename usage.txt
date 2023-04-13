@@ -1,0 +1,56 @@
+使用したライブラリのバージョン
+- Flask 2.1.0
+- torch 2.0.0
+- torchvision 0.15.1
+
+動作環境
+Docker version 20.10.17
+
+モデルの作成はNet.ipynbをご覧ください。
+※Google Colaboratoryで実行
+
+
+アプリの使用方法
+git リモートリポジトリをcloneする
+
+```
+git clone https://github.com/naka-c1024/CIFAR10API.git
+```
+
+Dockerを使用する場合
+
+```
+docker build -t cifar10_api .
+docker run -v $(pwd):/app -p 8080:8080 -it cifar10_api bash
+```
+
+Dockerを使用せずローカル環境で実行したい場合
+
+pipコマンドで使用したライブラリをインストール
+
+```
+pip install -r requirements.txt
+```
+
+アプリを立ち上げる
+
+```
+python main.py
+```
+
+APIの使用方法
+URIを渡したい場合
+
+<URI>の部分を変更してください。
+
+```bash
+curl -X POST -H 'Content-Type: application/json' -d '{"image_uri": "<URI>"}' https://cifar10api-sg3vqkre3q-an.a.run.app/predict
+```
+
+Fileを渡したい場合
+
+<File Path>の部分を変更してください。
+
+```
+curl -X POST -F image_file=@<File Path> https://cifar10api-sg3vqkre3q-an.a.run.app/predict
+```
