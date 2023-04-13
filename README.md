@@ -10,7 +10,7 @@ CIFAR10を学習した画像分類モデルで「飛行機, 自動車, 鳥, 猫,
 
 # DEMO
 
-デモ動画mp4を載せる
+https://user-images.githubusercontent.com/78196739/231756704-1e816820-9859-4838-83b0-cc4bf4d391d0.mp4
 
 # APIの使用方法
 
