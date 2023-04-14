@@ -46,12 +46,6 @@ curl -X POST -F image_file=@<File Path> https://cifar10api-sg3vqkre3q-an.a.run.a
 }
 ```
 
-# Requirement
-
-- Flask 2.1.0
-- torch 2.0.0
-- torchvision 0.15.1
-
 # Usage
 
 ## Git clone
@@ -88,3 +82,15 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+# 使用技術
+
+### 環境: Docker
+
+### フロントエンド: HTML，CSS (TailWindCSS)
+
+### バックエンド: Python (Flask)
+
+### DNN: PyTorch
+
+### デプロイ: Google Cloud Platform (Cloud Run)
