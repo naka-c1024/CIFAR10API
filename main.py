@@ -103,6 +103,8 @@ def index():
         # 画像のURLまたはファイルが指定されていない場合、エラーを表示
         if not image_uri and not image_file:
             return render_template("index.html", error="画像のURLまたはファイルを指定してください。")
+        if image_uri and image_file:
+            return render_template("index.html", error="画像のURLとファイルの両方を指定することはできません。")
 
         try:
             # 画像を開く
