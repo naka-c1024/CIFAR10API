@@ -85,12 +85,12 @@ python main.py
 
 # 使用技術
 
-### 環境: Docker
+環境: Docker
 
-### フロントエンド: HTML，CSS (TailWindCSS)
+フロントエンド: HTML，CSS (TailWindCSS)
 
-### バックエンド: Python (Flask)
+バックエンド: Python (Flask)
 
-### DNN: PyTorch
+DNN: PyTorch
 
-### デプロイ: Google Cloud Platform (Cloud Run)
+デプロイ: Google Cloud Platform (Cloud Run)
